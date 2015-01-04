@@ -8,7 +8,10 @@ class Region:
     def add_node(self,node):
         assert node not in self.nodes
         self.nodes.append(node)
-    
+
+    def remove_node(self,node):
+        self.nodes.remove(node)
+        
     def __str__(self):
         return '%d nodes' % len(self.nodes)
 
@@ -21,6 +24,10 @@ class Water(Region):
     def __str__(self):
         return 'Water, %s.' % Region.__str__(self)
 
+    def add_node(self,node):
+        # check for pools here
+        Region.add_node(self,node)
+        
 class Island(Region):
     """Track an island region of the board."""
 
@@ -35,6 +42,12 @@ class Island(Region):
         self.size = size
         self.style = Island.newstyle()
         self.add_node(anchor)
+
+    def remove_node(self,node):
+        """Remove a node. Raise an exception if trying to remove the anchor."""
+        if node == self.anchor:
+            raise ValueError('Cannot remove the anchor.')
+        Region.remove_node(self)
 
     def add_node(self,node):
         """Add a node.  Will raise an exception if overfull."""
