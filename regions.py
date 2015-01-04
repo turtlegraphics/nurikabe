@@ -1,6 +1,27 @@
 import itertools, string
 
-class Island:
+class Region:
+    """Track a region of the board."""
+    def __init__(self):
+        self.nodes = []
+
+    def add_node(self,node):
+        assert node not in self.nodes
+        self.nodes.append(node)
+    
+    def __str__(self):
+        return '%d nodes' % len(self.nodes)
+
+class Water(Region):
+    """Track a water region of the board."""
+    def __init__(self):
+        Region.__init__(self)
+        self.style = '#'
+
+    def __str__(self):
+        return 'Water, %s.' % Region.__str__(self)
+
+class Island(Region):
     """Track an island region of the board."""
 
     # An iterator to generate different 'styles' for different regions
@@ -9,16 +30,17 @@ class Island:
     def __init__(self,anchor,size):
         """Create with an anchor node and desired size,
            or use anchor of None for the water."""
+        Region.__init__(self)
         self.anchor = anchor
         self.size = size
-        self.nodes = [anchor]
         self.style = Island.newstyle()
+        self.add_node(anchor)
 
     def add_node(self,node):
         """Add a node.  Will raise an exception if overfull."""
         if self.is_full():
             raise ValueError('Island %s is full.' % str(self.style))
-        self.nodes.append(node)
+        Region.add_node(self,node)
 
     def is_hungry(self):
         """Return True if the region's desired size is smaller than the
@@ -31,14 +53,16 @@ class Island:
         return not self.is_hungry()
 
     def __str__(self):
-        return 'Region %s with anchor %s desiring size %d has %d nodes' % (
-            str(self.style), str(self.anchor), self.size, len(self.nodes))
+        return 'Island %s with anchor %s desiring size %d, %s' % (
+            str(self.style), str(self.anchor), self.size, Region.__str__(self))
 
 if __name__=='__main__':
+    w = Water()
     r1 = Island((1,0),4)
     r2 = Island((2,2),2)
     r2.add_node((2,3))
 
+    print 'w: ',w
     print 'r1:',r1
     print 'r2:',r2
 
