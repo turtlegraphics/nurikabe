@@ -1,4 +1,5 @@
 import networkx as nx
+from graph import find_shortest_cycles
 import regions
 
 class Board:
@@ -12,11 +13,8 @@ class Board:
         self.bfs_successors = nx.bfs_successors(g,self.basenode)
 
         # pools are defined as water cycles of minimum length
-        # here, find the girth of the graph (there's no built-in girth
-        # for networkx, so I'm using this kludge, which may actually be
-        # incorrect in general. For now, try it, and assert it worked.
-        self.pool_length = min([len(cycle) for cycle in nx.cycle_basis(g)])
-        assert self.pool_length == 4
+        # find all the pools in the graph, indexed by nodes
+        (self.pool_size,self.pools) = find_shortest_cycles(g)
 
         # set up regions of the board
         self.regions = []
@@ -52,7 +50,8 @@ class Board:
     def unset_node(self,n):
         """Return node to unset state (neither water nor land)."""
         r = self.get_region(n)
-        r.remove_node(n)
+        if r:
+            r.remove_node(n)
 
     def set_node_to_water(self,n):
         """Try to set node n to water. Raise exception on failure."""
@@ -68,13 +67,11 @@ class Board:
             self._solve(successors)
             return
 
-        try:
+        if not self.water.would_pool(n):
             self.set_node_to_water(n)
-        except region.RegionError:
-            pass
-        else:
-            self._solve(successors)
-            self.unset_node(n)
+
+        self._solve(successors)
+        self.unset_node(n)
 
     def _solve(self,successors):
         """Recursively walk the nodes in BFS order."""
@@ -116,7 +113,7 @@ class BoardRectangle(Board):
         return out.rstrip('\n')
 
 if __name__=='__main__':
-    b = BoardRectangle(6,3)
+    b = BoardRectangle(6,8)
     print b
     print
     i1 = regions.Island(b,(0,0),4)

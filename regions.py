@@ -1,8 +1,8 @@
 import itertools, string
 import networkx as nx
 
-class RegionError(Exception):
-    pass
+#class RegionError(Exception):
+#    pass
 
 class Region:
     """Track a region of the board."""
@@ -30,10 +30,20 @@ class Water(Region):
     def __str__(self):
         return 'Water, %s.' % Region.__str__(self)
 
-    def add_node(self,node):
-        # check for pools
-        Region.add_node(self,node)
-        
+    def would_pool(self,node):
+        """Determine if the node would create a pool."""
+        possiblepools = self.board.pools[node]
+        for p in possiblepools:
+            ispool = True
+            for n in p:
+                if n == node:
+                    continue
+                if n not in self.nodes:
+                    ispool = False
+            if ispool:
+                return True
+        return False
+
 class Island(Region):
     """Track an island region of the board."""
 
