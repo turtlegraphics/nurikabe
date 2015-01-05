@@ -1,35 +1,6 @@
 import networkx as nx
 import graphutil
-
-class Square:
-    """One square of the board."""
-    theMark = 0
-    @staticmethod
-    def clear_marks():
-        Square.theMark += 1
-    def __init__(self):
-        self.marker = None
-    def mark(self):
-        self.marker = Square.theMark
-    def marked(self):
-        return self.marker == Square.theMark
-
-class Empty(Square):
-    def __str__(self):
-        return '-'
-class Water(Square):
-    def __str__(self):
-        return '#'
-class Land(Square):
-    def __str__(self):
-        return '.'
-class Anchor(Land):
-    def __init__(self,size):
-        Land.__init__(self)
-        assert size > 0
-        self.size = size
-    def __str__(self):
-        return str(self.size)
+from squares import *
 
 class Board:
     """Store a Nurikabe board."""
@@ -57,6 +28,9 @@ class Board:
         assert self.is_Empty(node)
         self.set_node(node,Anchor(size))
         self.anchor_maxsize = max(self.anchor_maxsize,size)
+
+    def clear_node(self,node):
+        self.set_node(node,Empty())
 
     def get_node(self,node):
         """Return the value of a node."""
