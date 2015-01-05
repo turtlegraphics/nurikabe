@@ -1,135 +1,136 @@
 import networkx as nx
-import graph
-import regions
+import graphutil
+
+class Square:
+    """One square of the board."""
+    theMark = 0
+    @staticmethod
+    def clear_marks():
+        Square.theMark += 1
+    def __init__(self):
+        self.marker = None
+    def mark(self):
+        self.marker = Square.theMark
+    def marked(self):
+        return self.marker == Square.theMark
+
+class Empty(Square):
+    def __str__(self):
+        return '-'
+class Water(Square):
+    def __str__(self):
+        return '#'
+class Land(Square):
+    def __str__(self):
+        return '.'
+class Anchor(Land):
+    def __init__(self,size):
+        Land.__init__(self)
+        assert size > 0
+        self.size = size
+    def __str__(self):
+        return str(self.size)
 
 class Board:
     """Store a Nurikabe board."""
     def __init__(self,g):
         """Initialize with any graph."""
-        self.g = g
-        
-        # set base node and successor dictionary for board traversal
-        self.basenode = g.nodes()[0]
-        self.bfs_next = graph.bfs_list(g,self.basenode)
+        self.graph = g
+        for n in self.graph:
+            self.set_node(n,Empty())
+
+        # keep track of largest anchor to limit un-anchored islands
+        self.anchor_maxsize = 0
 
         # pools are defined as water cycles of minimum length
         # find all the pools in the graph, indexed by nodes
-        (self.pool_size,self.pools) = graph.find_shortest_cycles(g)
-
-        # set up regions of the board
-        self.regions = []
-        self.max_region_size = 0
-        self.water = regions.Water()
-        for n in self.g.nodes():
-            self._set_region(n,None)
-        self.land = regions.Land() # temporary anonymous land region
+        (self.pool_size,self.pools) = graphutil.find_shortest_cycles(g)
 
     def __str__(self):
-        return str(self.g)
+        return str(self.graph)
 
-    def add_region(self,r):
-        """Add a region to the board."""
-        assert r not in self.regions
-        self.regions.append(r)
-        self.max_region_size = max(self.max_region_size,r.size)
+    def set_node(self,node,val):
+        self.graph.node[node]['val'] = val
 
-        # mark nodes as in a region
-        for n in r.nodes:
-            self._set_region(n,r)
+    def set_anchor(self,node,size):
+        """Create an anchor of given size at node n."""
+        assert self.is_Empty(node)
+        self.set_node(node,Anchor(size))
+        self.anchor_maxsize = max(self.anchor_maxsize,size)
 
+    def get_node(self,node):
+        """Return the value of a node."""
+        return self.graph.node[node]['val']
 
-    def _set_region(self,n,r):
-        """Set the region of a node to r. Generally, use set_node instead."""
-        self.g.node[n]['region'] = r
+    def is_Empty(self,node):
+        return isinstance(self.get_node(node),Empty)
         
-    def get_region(self,n):
-        """Return the region of a node."""
-        return self.g.node[n]['region']
+    def is_Water(self,node):
+        return isinstance(self.get_node(node),Water)
 
-    def set_node(self,n,r):
-        """Set node n to be in region r."""
-        assert not self.is_set(n)
-        r.add_node(n)
-        self._set_region(n,r)
+    def is_Land(self,node):
+        return isinstance(self.get_node(node),Land)
 
-    def unset_node(self,n):
-        """Return node to unset state (neither water nor land)."""
-        r = self.get_region(n)
-        if r:
-            self._set_region(n,None)
-            r.remove_node(n)
+    def is_Anchor(self,node):
+        """Return size of Anchor or 0."""
+        me = self.get_node(node)
+        if isinstance(me,Anchor):
+            return me.size
+        else:
+            return 0
 
-    def is_set(self,n):
-        """Return True if node is in a region."""
-        return self.get_region(n) != None
-
-    def is_water(self,n):
-        """Return True if node is in the water region."""
-        return n in self.water.nodes
-
-    def is_land(self,n):
-        """Return True if node is in any land region."""
-        return self.is_set(n) and not self.is_water(n)
-
-    def would_pool(self,node):
-        """Determine if the node would create a pool."""
+    def in_pool(self,node):
+        """Determine if the node is in a pool."""
         possiblepools = self.pools[node]
         for p in possiblepools:
             ispool = True
             for n in p:
-                if n == node:
-                    continue
-                if not self.is_water(n):
+                if not self.is_Water(n):
                     ispool = False
             if ispool:
                 return True
         return False
 
-    def ok_for_land(self,n):
-        """Try to set node to land. Return """
-        for nbr in self.g[n]:
-            if not self.is_water(nbr) and self.is_set(nbr):
-                return False
-        return True
-
-    def _solve(self,n):
-        """Operate on a node, using _solve recursively."""
-        if n == None:
-            print '='*30
-            print 'Solved!'
-            print self
-            print '='*30
-            return
-
-        #print 'Ready for node',n
-        #raw_input()
+    def _ei(self,node,anchors):
+        """Recursive search of the island.  Add newly discovered Anchors
+        to the anchors list, and return the size."""
+        v = self.get_node(node)
+        if v.marked():
+            # been here before
+            return 0
+        v.mark()
+        if not self.is_Land(node):
+            return 0
         
-        if self.is_set(n):
-            # node is already set. move along.
-            self._solve(self.bfs_next[n])
-            return
+        # found new piece of the island
+        size = 1
+        if self.is_Anchor(node):
+            anchors.append(node)
 
-        if not self.would_pool(n):
-            self.set_node(n,self.water)
-            # print 'Try node',n,'as water:'
-            # print self
-            self._solve(self.bfs_next[n])
-            self.unset_node(n)
-        #else:
-        #    print 'Node',n,'cannot be water'
+        # recursively check all neighbors
+        for n in self.graph[node]:
+            size += self._ei(n,anchors)
 
-        if self.ok_for_land(n):
-            self.set_node(n,self.land)
-            #print 'Try node',n,'as land:'
-            #print self
-            self._solve(self.bfs_next[n])
-            self.unset_node(n)
-        #else:
-        #    print 'Node',n,'cannot be land'
-            
-    def solve(self):
-        """Brute force recursive solver."""
-        self._solve(self.basenode)
+        return size
+
+    def explore_island(self,node):
+        """Return the size of the island containing node, and a list
+        of any Anchors in the island."""
+        Square.clear_marks()
+        anchors = []
+        size = self._ei(node,anchors)
+        return (size,anchors)
+
+    def legal_island(self,node):
+        """True if the node is part of a legal (small enough) island."""
+        (size, anchors) = self.explore_island(node)
+        if len(anchors) > 1:
+            return False
+        if anchors:
+            maxsize = self.get_node(anchors[0]).size
+        else:
+            maxsize = self.anchor_maxsize - 1
+        return size <= maxsize
         
 class BoardRectangle(Board):
     """A rectangular square-grid Nurikabe board."""
@@ -143,22 +144,51 @@ class BoardRectangle(Board):
         out = ''
         for y in range(self.height):
             for x in range(self.width):
-                r = self.g.node[(x,y)]['region']
-                out += str(r.style) if r else '.'
+                out += str(self.get_node((x,y)))+' '
             out += '\n'
 
         return out.rstrip('\n')
 
 if __name__=='__main__':
-    b = BoardRectangle(6,8)
-    i1 = regions.Island((0,0),4)
-    i1.add_node((0,1))
-    i2 = regions.Island((4,2),2)
-    b.add_region(i1)
-    b.add_region(i2)
-    b.set_node((5,1),b.water)
+    b = BoardRectangle(4,3)
+    b.set_anchor((0,0),3)
+    b.set_anchor((3,2),3)
+    for n in [ (0,1), (0,2), (2,2) ]:
+        b.set_node(n,Land())
+    for n in [ (2,0), (3,0), (1,1), (2,1), (3,1) ]:
+        b.set_node(n,Water())
 
+    print 'Board'
     print b
+
+    print ' Node\tEmpty\tWater\tLand\tAnchor'
+    for n in [ (0,0), (0,1), (1,0), (1,1) ]:
+        print '%s\t%s\t%s\t%s\t%s' % (str(n),
+                                      str(b.is_Empty(n)),
+                                      str(b.is_Water(n)),
+                                      str(b.is_Land(n)),
+                                      str(b.is_Anchor(n)))
+    print 'Pool locations:'
+    for y in range(3):
+        for x in range(4):
+            if b.in_pool((x,y)):
+                print 'P',
+            else:
+                print '-',
+        print
+
+    print 'Islands'
+    print '   Base  : size, anchors, Legal?'
+    for n in [(0,0),(0,1),(0,2),(1,1),(2,2),(3,2)]:
+        print ' ',n,':',b.explore_island(n),b.legal_island(n)
+
     print
-    print 'Solving...'
-    b.solve()
+    print 'New Board'
+    b.set_node((1,2),Land())
+    b.set_node((2,1),Land())
+    print b
+
+    print 'Islands'
+    print '   Base  : size, anchors, Legal?'
+    for n in [(0,0),(2,2),(2,1)]:
+        print ' ',n,':',b.explore_island(n),b.legal_island(n)
