@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Nurikabe solver.
 2015 Bryan Clair
@@ -18,7 +19,15 @@ import time
 import solver
 import board
 
-layout = sys.stdin.read()
+if len(sys.argv) == 1:
+    infile = sys.stdin
+elif len(sys.argv) == 2:
+    infile = file(sys.argv[1])
+else:
+    sys.stderr.write('usage: nurikabe.py [filename]\n')
+    sys.exit()
+
+layout = infile.read()
 
 b = board.BoardFromASCII(layout)
 print 'Board:'
