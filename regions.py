@@ -1,8 +1,8 @@
 import itertools, string
 import networkx as nx
 
-#class RegionError(Exception):
-#    pass
+class RegionError(Exception):
+    pass
 
 class Region:
     """Track a region of the board."""
@@ -16,7 +16,16 @@ class Region:
 
     def remove_node(self,node):
         self.nodes.remove(node)
-        
+
+    def size(self):
+        return len(self.nodes)
+
+    def is_hungry(self):
+        return True
+
+    def is_full(self):
+        return False
+
     def __str__(self):
         return '%d nodes' % len(self.nodes)
 
@@ -33,13 +42,14 @@ class Land(Region):
     """Track an anonymous land region of the board."""
     def __init__(self):
         Region.__init__(self)
+        self.anchor = None
         self.style = '*'
-
+        
     def __str__(self):
         return 'Land, %s.' % Region.__str__(self)
-    
-class Island(Region):
-    """Track an island region of the board."""
+        
+class Island(Land):
+    """Track an island region of the board - Land connected to an anchor."""
 
     # An iterator to generate different 'styles' for different regions
     newstyle = itertools.cycle(string.lowercase).next
@@ -47,16 +57,16 @@ class Island(Region):
     def __init__(self,anchor,size):
         """Create with an anchor node and desired size,
            or use anchor of None for the water."""
-        Region.__init__(self)
+        Land.__init__(self)
         self.anchor = anchor
-        self.size = size
+        self.fullsize = fullsize
         self.style = Island.newstyle()
         self.add_node(anchor)
 
     def remove_node(self,node):
         """Remove a node. Raise an exception if trying to remove the anchor."""
         if node == self.anchor:
-            raise ValueError('Cannot remove the anchor.')
+            raise RegionError('Cannot remove the anchor.')
         Region.remove_node(self)
 
     def add_node(self,node):
@@ -68,7 +78,7 @@ class Island(Region):
     def is_hungry(self):
         """Return True if the region's desired size is smaller than the
         number of nodes in the region."""
-        return len(self.nodes) < self.size
+        return len(self.nodes) < self.fullsize
 
     def is_full(self):
         """Return True if the region's desired size is equal to the number
