@@ -1,5 +1,8 @@
 """
-Graph utility algorithms
+graphutil module
+   Graph utility functions not built into networkx
+
+2015 Bryan Clair
 """
 
 import networkx as nx

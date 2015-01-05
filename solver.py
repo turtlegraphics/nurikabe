@@ -1,3 +1,10 @@
+"""
+solver module
+   Implements recursive brute-force solution search.
+
+2015 Bryan Clair
+"""
+
 import sys,logging
 logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 

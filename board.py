@@ -1,3 +1,11 @@
+"""
+board module
+  Implements the board and a number of functions to check
+  for legal arrangements.
+
+2015 Bryan Clair
+"""
+
 import networkx as nx
 import graphutil
 from squares import *

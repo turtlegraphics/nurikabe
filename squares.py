@@ -1,6 +1,9 @@
 """
-Each node of the board contains a Square subclass.
-Only when using square grids do these actually correspond to anything square.
+square module
+  Each node of the board contains a Square subclass.
+  Only when using square grids do these actually correspond to anything square.
+
+2015 Bryan Clair
 """
 class Square:
     """One square of the board."""
