@@ -4,6 +4,22 @@ Graph utility algorithms
 
 import networkx as nx
 
+def bfs_list(g,source):
+    """
+    Return a dictionary keyed by nodes, giving the successor in BFS from
+    that node.  Not quite what networkx's built in bfs_successors does.
+    """
+    bfs = nx.bfs_successors(g,source)
+    next = [source]
+    d = {}
+    while next:
+        cur = next.pop(0)
+        if cur in bfs:
+            next.extend(bfs[cur])
+        if next:
+            d[cur] = next[0]
+    return d
+
 def find_shortest_cycles(g):
     """
     Return a pair (girth, d)
@@ -61,6 +77,22 @@ def find_shortest_cycles(g):
     return (girth,d)
 
 if __name__=='__main__':
+    sep = '-'*30
+    print sep
+    print 'bfs_list'
+    print sep
+    print '4x3 grid'
+    g = nx.grid_graph([4,3])
+    n = (0,0)
+    d = bfs_list(g,n)
+    while n in d:
+        print n,'->',
+        n = d[n]
+    print n
+
+    print sep
+    print 'find_shortest_cycles'
+    print sep
     g = nx.grid_graph([4,4])
     (girth,d) = find_shortest_cycles(g)
     print '4x4 grid has girth',girth,'and nodes have this many short cycles:'
