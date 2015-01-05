@@ -67,44 +67,59 @@ class Board:
 
     def _ei(self,node,anchors):
         """Recursive search of the island.  Add newly discovered Anchors
-        to the anchors list, and return the size."""
+        to the anchors list, and return the size and number of adjacent
+        empty nodes."""
+
         v = self.get_node(node)
         if v.marked():
             # been here before
-            return 0
+            return (0,0)
         v.mark()
+
+        if self.is_Empty(node):
+            return (0,1)
         if not self.is_Land(node):
-            return 0
+            return (0,0)
         
         # found new piece of the island
-        size = 1
         if self.is_Anchor(node):
             anchors.append(node)
 
         # recursively check all neighbors
+        size = 1  # count this node
+        freedoms = 0
         for n in self.graph[node]:
-            size += self._ei(n,anchors)
+            (s,f) = self._ei(n,anchors)
+            size += s
+            freedoms += f
 
-        return size
+        return (size,freedoms)
 
     def explore_island(self,node):
         """Return the size of the island containing node, and a list
         of any Anchors in the island."""
         Square.clear_marks()
         anchors = []
-        size = self._ei(node,anchors)
-        return (size,anchors)
+        (size,freedoms) = self._ei(node,anchors)
+        return (size,freedoms,anchors)
 
     def legal_island(self,node):
-        """True if the node is part of a legal (small enough) island."""
-        (size, anchors) = self.explore_island(node)
+        """True if the node is part of a legal island.
+        It should have only one anchor, and either be that size or
+        be smaller with at least one freedom."""
+        (size, freedoms, anchors) = self.explore_island(node)
         if len(anchors) > 1:
             return False
         if anchors:
-            maxsize = self.get_node(anchors[0]).size
-        else:
-            maxsize = self.anchor_maxsize - 1
-        return size <= maxsize
+            wantsize = self.get_node(anchors[0]).size
+            if size == wantsize:
+                return True
+            if size < wantsize and freedoms > 0:
+                return True
+            return False
+
+        # no anchors.. free terrain. Just cap its size
+        return size <= self.anchor_maxsize - 1
         
 class BoardRectangle(Board):
     """A rectangular square-grid Nurikabe board."""
@@ -129,7 +144,7 @@ if __name__=='__main__':
     b.set_anchor((3,2),3)
     for n in [ (0,1), (0,2), (2,2) ]:
         b.set_node(n,Land())
-    for n in [ (2,0), (3,0), (1,1), (2,1), (3,1) ]:
+    for n in [ (2,0), (3,0), (1,1), (2,1), (3,1), (1,2) ]:
         b.set_node(n,Water())
 
     print 'Board'
@@ -152,7 +167,7 @@ if __name__=='__main__':
         print
 
     print 'Islands'
-    print '   Base  : size, anchors, Legal?'
+    print '   Base  : size, free, anchors, Legal?'
     for n in [(0,0),(0,1),(0,2),(1,1),(2,2),(3,2)]:
         print ' ',n,':',b.explore_island(n),b.legal_island(n)
 
@@ -160,9 +175,11 @@ if __name__=='__main__':
     print 'New Board'
     b.set_node((1,2),Land())
     b.set_node((2,1),Land())
+    b.clear_node((2,0))
+    b.clear_node((3,1))
     print b
 
     print 'Islands'
-    print '   Base  : size, anchors, Legal?'
+    print '   Base  : size, free, anchors, Legal?'
     for n in [(0,0),(2,2),(2,1)]:
         print ' ',n,':',b.explore_island(n),b.legal_island(n)
