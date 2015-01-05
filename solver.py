@@ -47,12 +47,12 @@ class Solver:
             self.solutions.append(str(self.board))
             return
 
-        logging.debug('Ready for node '+str(n))
-        
         if not self.board.is_Empty(n):
             # node is already set. move along.
             self._solve(self.bfs_next[n])
             return
+
+        logging.debug('Working node '+str(n))
 
         logging.debug('Try node'+str(n)+'as water:')
         self.board.set_node(n,Water())

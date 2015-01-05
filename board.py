@@ -176,7 +176,8 @@ def BoardFromASCII(data,coding={'.':Empty,'+':Land,'#':Water}):
     for r in rows:
         if len(r) != cols:
             raise ValueError('All rows must be the same width.')
-        board = BoardRectangle(cols,len(rows))
+
+    board = BoardRectangle(cols,len(rows))
 
     (x,y) = (0,0)
     for r in rows:

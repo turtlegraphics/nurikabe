@@ -97,11 +97,12 @@ if __name__=='__main__':
     print sep
     print 'find_shortest_cycles'
     print sep
-    g = nx.grid_graph([4,4])
+    size = 6
+    g = nx.grid_graph([size,size])
     (girth,d) = find_shortest_cycles(g)
-    print '4x4 grid has girth',girth,'and nodes have this many short cycles:'
-    for y in range(4):
-        for x in range(4):
+    print size,'x',size,' grid has girth',girth,'and nodes have this many short cycles:'
+    for y in range(size):
+        for x in range(size):
             print len(d[(x,y)]),
         print
 
