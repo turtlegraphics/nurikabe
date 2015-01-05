@@ -18,23 +18,26 @@ class Solver:
         self.basenode = board.graph.nodes()[0]
         self.bfs_next = graphutil.bfs_list(board.graph,self.basenode)
 
-    def new_water_ok(self,node):
-        """Check if water just placed at node is legal."""
-        # Check if pool was made
-        if self.board.in_pool(node):
-            return False
-        # Check if neighbor islands got cut off
-        for n in self.board.graph[node]:
-            if self.board.is_Land(n) and not self.board.legal_island(n):
+    def node_ok(self,node):
+        """Check if newly placed node is legal."""
+        if self.board.is_Land(node):
+            if not self.board.legal_island(node):
+                logging.debug('land at '+str(node)+' makes bad island')
                 return False
-        return True
-
-    def new_land_ok(self,node):
-        """Check if land just placed at node is legal."""
-        if not self.board.legal_island(node):
-            return False
+        else: # Water node
+            if self.board.in_pool(node):
+                logging.debug('water at '+str(node)+' makes pool')
+                return False
+            for n in self.board.graph[node]:
+                if self.board.is_Land(n) and not self.board.legal_island(n):
+                    logging.debug('water at' + str(node) +
+                                  ' constricts island at '+str(n))
+                    return False
+        # Check for connected water
         if not self.board.connected_water():
+            logging.debug('node at '+str(node)+' disconnects water')
             return False
+        
         return True
 
     def _solve(self,n):
@@ -45,8 +48,6 @@ class Solver:
             return
 
         logging.debug('Ready for node '+str(n))
-        if logging.getLogger().getEffectiveLevel() <= logging.DEBUG:
-            raw_input()
         
         if not self.board.is_Empty(n):
             # node is already set. move along.
@@ -56,7 +57,7 @@ class Solver:
         logging.debug('Try node'+str(n)+'as water:')
         self.board.set_node(n,Water())
         logging.debug('\n'+str(self.board))
-        if self.new_water_ok(n):
+        if self.node_ok(n):
             self._solve(self.bfs_next[n])
         else:
             logging.debug('Node'+str(n)+'cannot be water')
@@ -65,7 +66,7 @@ class Solver:
         logging.debug('Try node'+str(n)+'as land:')
         self.board.set_node(n,Land())
         logging.debug('\n'+str(self.board))
-        if self.new_land_ok(n):
+        if self.node_ok(n):
             self._solve(self.bfs_next[n])
         else:
             logging.debug('Node'+str(n)+'cannot be land')
