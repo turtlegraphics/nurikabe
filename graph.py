@@ -18,6 +18,7 @@ def bfs_list(g,source):
             next.extend(bfs[cur])
         if next:
             d[cur] = next[0]
+    d[cur] = None
     return d
 
 def find_shortest_cycles(g):
@@ -85,10 +86,10 @@ if __name__=='__main__':
     g = nx.grid_graph([4,3])
     n = (0,0)
     d = bfs_list(g,n)
-    while n in d:
-        print n,'->',
+    while n:
+        print n,
         n = d[n]
-    print n
+    print
 
     print sep
     print 'find_shortest_cycles'
