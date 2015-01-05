@@ -118,9 +118,15 @@ class Board:
                 return True
             return False
 
-        # no anchors.. free terrain. Just cap its size
-        return size <= self.anchor_maxsize - 1
-        
+        # no anchors.. free terrain.
+        # needs to have a freedom and cap on size
+        return freedoms > 0 and size <= self.anchor_maxsize - 1
+
+    def connected_water(self):
+        """True if Water+Empty nodes form a connected subgraph."""
+        wetspace = [n for n in self.graph if not self.is_Land(n)]
+        return nx.is_connected(self.graph.subgraph(wetspace))
+
 class BoardRectangle(Board):
     """A rectangular square-grid Nurikabe board."""
     def __init__(self,width,height):
@@ -139,7 +145,7 @@ class BoardRectangle(Board):
         return out.rstrip('\n')
 
 if __name__=='__main__':
-    b = BoardRectangle(4,3)
+    b = BoardRectangle(5,3)
     b.set_anchor((0,0),3)
     b.set_anchor((3,2),3)
     for n in [ (0,1), (0,2), (2,2) ]:
@@ -150,6 +156,11 @@ if __name__=='__main__':
     print 'Board'
     print b
 
+    if b.connected_water():
+        print 'Water is connected.'
+    else:
+        print 'Water is not connected.'
+
     print ' Node\tEmpty\tWater\tLand\tAnchor'
     for n in [ (0,0), (0,1), (1,0), (1,1) ]:
         print '%s\t%s\t%s\t%s\t%s' % (str(n),
@@ -159,7 +170,7 @@ if __name__=='__main__':
                                       str(b.is_Anchor(n)))
     print 'Pool locations:'
     for y in range(3):
-        for x in range(4):
+        for x in range(5):
             if b.in_pool((x,y)):
                 print 'P',
             else:
@@ -168,18 +179,24 @@ if __name__=='__main__':
 
     print 'Islands'
     print '   Base  : size, free, anchors, Legal?'
-    for n in [(0,0),(0,1),(0,2),(1,1),(2,2),(3,2)]:
-        print ' ',n,':',b.explore_island(n),b.legal_island(n)
+    for n in [(0,0),(0,1),(0,2),(1,0),(1,1),(2,2),(3,2)]:
+        print ' ',n,':',b.explore_island(n),'\t',b.legal_island(n)
 
     print
     print 'New Board'
     b.set_node((1,2),Land())
     b.set_node((2,1),Land())
+    b.set_node((1,0),Land())
     b.clear_node((2,0))
     b.clear_node((3,1))
     print b
 
+    if b.connected_water():
+        print 'Water is connected.'
+    else:
+        print 'Water is not connected.'
+
     print 'Islands'
     print '   Base  : size, free, anchors, Legal?'
     for n in [(0,0),(2,2),(2,1)]:
-        print ' ',n,':',b.explore_island(n),b.legal_island(n)
+        print ' ',n,':',b.explore_island(n),'\t',b.legal_island(n)
