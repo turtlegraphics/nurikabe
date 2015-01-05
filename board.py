@@ -18,6 +18,7 @@ class Board:
         for n in self.graph:
             self.set_node(n,Empty())
 
+        self.anchors = []
         # keep track of largest anchor to limit un-anchored islands
         self.anchor_maxsize = 0
 
@@ -36,6 +37,7 @@ class Board:
         assert self.is_Empty(node)
         self.set_node(node,Anchor(size))
         self.anchor_maxsize = max(self.anchor_maxsize,size)
+        self.anchors.append(node)
 
     def clear_node(self,node):
         self.set_node(node,Empty())
@@ -75,19 +77,19 @@ class Board:
 
     def _ei(self,node,anchors):
         """Recursive search of the island.  Add newly discovered Anchors
-        to the anchors list, and return the size and number of adjacent
-        empty nodes."""
+        to the anchors list.
+        Return the island size and list of adjacent empty nodes."""
 
         v = self.get_node(node)
         if v.marked():
             # been here before
-            return (0,0)
+            return (0,[])
         v.mark()
 
         if self.is_Empty(node):
-            return (0,1)
+            return (0,[node])
         if not self.is_Land(node):
-            return (0,0)
+            return (0,[])
         
         # found new piece of the island
         if self.is_Anchor(node):
@@ -95,11 +97,11 @@ class Board:
 
         # recursively check all neighbors
         size = 1  # count this node
-        freedoms = 0
+        freedoms = []
         for n in self.graph[node]:
             (s,f) = self._ei(n,anchors)
             size += s
-            freedoms += f
+            freedoms.extend(f)
 
         return (size,freedoms)
 
@@ -122,13 +124,13 @@ class Board:
             wantsize = self.get_node(anchors[0]).size
             if size == wantsize:
                 return True
-            if size < wantsize and freedoms > 0:
+            if size < wantsize and freedoms:
                 return True
             return False
 
         # no anchors.. free terrain.
         # needs to have a freedom and cap on size
-        return freedoms > 0 and size <= self.anchor_maxsize - 1
+        return freedoms and size <= self.anchor_maxsize - 1
 
     def _has_water(self,bunch):
         """True if there is a Water node in the list of nodes."""
