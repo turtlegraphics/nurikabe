@@ -33,4 +33,8 @@ class Anchor(Land):
         assert size > 0
         self.size = size
     def __str__(self):
-        return str(self.size)
+        if self.size < 10:
+            return str(self.size)
+        else:
+            return chr(self.size - 10 + ord('A'))
+
