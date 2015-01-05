@@ -130,10 +130,25 @@ class Board:
         # needs to have a freedom and cap on size
         return freedoms > 0 and size <= self.anchor_maxsize - 1
 
+    def _has_water(self,bunch):
+        """True if there is a Water node in the list of nodes."""
+        for node in bunch:
+            if self.is_Water(node):
+                return True
+        return False
+
     def connected_water(self):
         """True if Water+Empty nodes form a connected subgraph."""
-        wetspace = [n for n in self.graph if not self.is_Land(n)]
-        return nx.is_connected(self.graph.subgraph(wetspace))
+        wetset = [n for n in self.graph if not self.is_Land(n)]
+        wetgraph = self.graph.subgraph(wetset)
+        water_component = None
+        for component in nx.connected_components(wetgraph):
+            if self._has_water(component):
+                if water_component:
+                    return False # found second water component
+                else:
+                    water_component = component
+        return True
 
 class BoardRectangle(Board):
     """A rectangular square-grid Nurikabe board."""
@@ -187,7 +202,7 @@ if __name__=='__main__':
     b = BoardRectangle(5,3)
     b.set_anchor((0,0),3)
     b.set_anchor((3,2),3)
-    for n in [ (0,1), (0,2), (2,2) ]:
+    for n in [ (0,1), (0,2), (2,2), (4,1) ]:
         b.set_node(n,Land())
     for n in [ (2,0), (3,0), (1,1), (2,1), (3,1), (1,2) ]:
         b.set_node(n,Water())
