@@ -40,6 +40,18 @@ class Solver:
         
         return True
 
+    def _try_node(self,node,Type):
+        """Set node to Type, then recursively solve."""
+        
+        logging.debug('Try node '+str(node)+' as '+Type.__name__)
+        self.board.set_node(node,Type())
+        logging.debug('\n'+str(self.board))
+        if self.node_ok(node):
+            self._solve(self.bfs_next[node])
+        else:
+            logging.debug('Node '+str(node)+' cannot be '+Type.__name__)
+        self.board.clear_node(node)
+
     def _solve(self,n):
         """Operate on a node, using _solve recursively."""
         if n == None:
@@ -47,30 +59,16 @@ class Solver:
             self.solutions.append(str(self.board))
             return
 
+        logging.debug('Working node '+str(n))
+
         if not self.board.is_Empty(n):
             # node is already set. move along.
+            logging.debug('Node '+str(n)+' is already set.')
             self._solve(self.bfs_next[n])
             return
 
-        logging.debug('Working node '+str(n))
-
-        logging.debug('Try node'+str(n)+'as water:')
-        self.board.set_node(n,Water())
-        logging.debug('\n'+str(self.board))
-        if self.node_ok(n):
-            self._solve(self.bfs_next[n])
-        else:
-            logging.debug('Node'+str(n)+'cannot be water')
-        self.board.clear_node(n)
-
-        logging.debug('Try node'+str(n)+'as land:')
-        self.board.set_node(n,Land())
-        logging.debug('\n'+str(self.board))
-        if self.node_ok(n):
-            self._solve(self.bfs_next[n])
-        else:
-            logging.debug('Node'+str(n)+'cannot be land')
-        self.board.clear_node(n)
+        self._try_node(n,Water)
+        self._try_node(n,Land)
 
     def solve(self):
         """Brute force recursive solver."""
