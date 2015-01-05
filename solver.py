@@ -11,6 +11,25 @@ class Solver:
         self.basenode = board.graph.nodes()[0]
         self.bfs_next = graphutil.bfs_list(board.graph,self.basenode)
 
+    def new_water_ok(self,node):
+        """Check if water just placed at node is legal."""
+        # Check if pool was made
+        if self.board.in_pool(node):
+            return False
+        # Check if neighbor islands got cut off
+        for n in self.board.graph[node]:
+            if self.board.is_Land(n) and not self.board.legal_island(n):
+                return False
+        return True
+
+    def new_land_ok(self,node):
+        """Check if land just placed at node is legal."""
+        if not self.board.legal_island(node):
+            return False
+        if not self.board.connected_water():
+            return False
+        return True
+
     def _solve(self,n):
         """Operate on a node, using _solve recursively."""
         if n == None:
@@ -32,7 +51,7 @@ class Solver:
         logging.debug('Try node'+str(n)+'as water:')
         self.board.set_node(n,Water())
         logging.debug('\n'+str(self.board))
-        if not self.board.in_pool(n):
+        if self.new_water_ok(n):
             self._solve(self.bfs_next[n])
         else:
             logging.debug('Node'+str(n)+'cannot be water')
@@ -41,7 +60,7 @@ class Solver:
         logging.debug('Try node'+str(n)+'as land:')
         self.board.set_node(n,Land())
         logging.debug('\n'+str(self.board))
-        if self.board.legal_island(n):
+        if self.new_land_ok(n):
             self._solve(self.bfs_next[n])
         else:
             logging.debug('Node'+str(n)+'cannot be land')
