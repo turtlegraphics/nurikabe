@@ -1,5 +1,5 @@
 import networkx as nx
-from graph import find_shortest_cycles
+import graph
 import regions
 
 class Board:
@@ -8,20 +8,22 @@ class Board:
         """Initialize with any graph."""
         self.g = g
         
-        # set base node and successor dictionary for breadth first search
+        # set base node and successor dictionary for board traversal
         self.basenode = g.nodes()[0]
-        self.bfs_successors = nx.bfs_successors(g,self.basenode)
+        self.bfs_next = graph.bfs_list(g,self.basenode)
 
         # pools are defined as water cycles of minimum length
         # find all the pools in the graph, indexed by nodes
-        (self.pool_size,self.pools) = find_shortest_cycles(g)
+        (self.pool_size,self.pools) = graph.find_shortest_cycles(g)
 
         # set up regions of the board
         self.regions = []
-        self.water = regions.Water(self)
+        self.max_region_size = 0
+        self.water = regions.Water()
         for n in self.g.nodes():
-            self.set_region(n,None)
-        
+            self._set_region(n,None)
+        self.land = regions.Land() # temporary anonymous land region
+
     def __str__(self):
         return str(self.g)
 
@@ -29,70 +31,105 @@ class Board:
         """Add a region to the board."""
         assert r not in self.regions
         self.regions.append(r)
+        self.max_region_size = max(self.max_region_size,r.size)
 
-        # mark node as in a region
+        # mark nodes as in a region
         for n in r.nodes:
-            self.set_region(n,r)
+            self._set_region(n,r)
 
 
-    def set_region(self,n,r):
-        """Set the region of a node to r."""
+    def _set_region(self,n,r):
+        """Set the region of a node to r. Generally, use set_node instead."""
         self.g.node[n]['region'] = r
         
     def get_region(self,n):
         """Return the region of a node."""
         return self.g.node[n]['region']
 
-    def is_set(self,n):
-        """Return True if node is in a region."""
-        return self.get_region(n) != None
+    def set_node(self,n,r):
+        """Set node n to be in region r."""
+        assert not self.is_set(n)
+        r.add_node(n)
+        self._set_region(n,r)
 
     def unset_node(self,n):
         """Return node to unset state (neither water nor land)."""
         r = self.get_region(n)
         if r:
+            self._set_region(n,None)
             r.remove_node(n)
 
-    def set_node_to_water(self,n):
-        """Try to set node n to water. Raise exception on failure."""
-        assert not self.is_set(n)
-        self.water.add_node(n)
-        self.set_region(n,self.water)
+    def is_set(self,n):
+        """Return True if node is in a region."""
+        return self.get_region(n) != None
 
-    def _worknode(self,n,successors):
+    def is_water(self,n):
+        """Return True if node is in the water region."""
+        return n in self.water.nodes
+
+    def is_land(self,n):
+        """Return True if node is in any land region."""
+        return self.is_set(n) and not self.is_water(n)
+
+    def would_pool(self,node):
+        """Determine if the node would create a pool."""
+        possiblepools = self.pools[node]
+        for p in possiblepools:
+            ispool = True
+            for n in p:
+                if n == node:
+                    continue
+                if not self.is_water(n):
+                    ispool = False
+            if ispool:
+                return True
+        return False
+
+    def ok_for_land(self,n):
+        """Try to set node to land. Return """
+        for nbr in self.g[n]:
+            if not self.is_water(nbr) and self.is_set(nbr):
+                return False
+        return True
+
+    def _solve(self,n):
         """Operate on a node, using _solve recursively."""
-        print 'Working node',n
-        if self.is_set(n):
-            # node is already set. move along.
-            self._solve(successors)
-            return
-
-        if not self.water.would_pool(n):
-            self.set_node_to_water(n)
-
-        self._solve(successors)
-        self.unset_node(n)
-
-    def _solve(self,successors):
-        """Recursively walk the nodes in BFS order."""
-        if not successors:
+        if n == None:
+            print '='*30
             print 'Solved!'
             print self
+            print '='*30
             return
-        n = successors.pop(0)
-        try:
-            successors.extend(self.bfs_successors[n])
-        except KeyError:
-            pass
 
-        self._worknode(n,successors)
+        #print 'Ready for node',n
+        #raw_input()
+        
+        if self.is_set(n):
+            # node is already set. move along.
+            self._solve(self.bfs_next[n])
+            return
 
-        successors.insert(0,n)
+        if not self.would_pool(n):
+            self.set_node(n,self.water)
+            # print 'Try node',n,'as water:'
+            # print self
+            self._solve(self.bfs_next[n])
+            self.unset_node(n)
+        #else:
+        #    print 'Node',n,'cannot be water'
 
+        if self.ok_for_land(n):
+            self.set_node(n,self.land)
+            #print 'Try node',n,'as land:'
+            #print self
+            self._solve(self.bfs_next[n])
+            self.unset_node(n)
+        #else:
+        #    print 'Node',n,'cannot be land'
+            
     def solve(self):
         """Brute force recursive solver."""
-        source = self.g.nodes()[0]
-        self._solve([self.basenode])
+        self._solve(self.basenode)
         
 class BoardRectangle(Board):
     """A rectangular square-grid Nurikabe board."""
@@ -114,15 +151,14 @@ class BoardRectangle(Board):
 
 if __name__=='__main__':
     b = BoardRectangle(6,8)
-    print b
-    print
-    i1 = regions.Island(b,(0,0),4)
+    i1 = regions.Island((0,0),4)
     i1.add_node((0,1))
-    i2 = regions.Island(b,(4,2),2)
+    i2 = regions.Island((4,2),2)
     b.add_region(i1)
     b.add_region(i2)
-    b.set_node_to_water((5,1))
+    b.set_node((5,1),b.water)
 
     print b
-
+    print
+    print 'Solving...'
     b.solve()
