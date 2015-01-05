@@ -17,13 +17,13 @@ class Square:
 
 class Empty(Square):
     def __str__(self):
-        return '-'
+        return '.'
 class Water(Square):
     def __str__(self):
         return '#'
 class Land(Square):
     def __str__(self):
-        return '.'
+        return '+'
 class Anchor(Land):
     def __init__(self,size):
         Land.__init__(self)
