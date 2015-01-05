@@ -1,5 +1,5 @@
 import sys,logging
-logging.basicConfig(stream=sys.stderr, level=logging.INFO)
+logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
 
 import graphutil
 from squares import *
@@ -33,10 +33,8 @@ class Solver:
     def _solve(self,n):
         """Operate on a node, using _solve recursively."""
         if n == None:
-            print '='*30
-            print 'Solved!'
-            print self.board
-            print
+            logging.info('Found solution:\n'+str(self.board))
+            self.solutions.append(str(self.board))
             return
 
         logging.debug('Ready for node '+str(n))
@@ -68,15 +66,44 @@ class Solver:
 
     def solve(self):
         """Brute force recursive solver."""
+        self.solutions = []
         self._solve(self.basenode)
+        return self.solutions
 
 if __name__=='__main__':
     import board
-    b = board.BoardRectangle(4,3)
-    b.set_anchor((0,0),3)
-    b.set_anchor((3,2),3)
 
-    print 'Board'
-    print b
+    def doboard(s):
+        b = board.BoardFromASCII(s)
+        print b
+        print 'Solutions:'
+        answers = Solver(b).solve()
+        if answers:
+            for a in answers:
+                print a
+                print
+        else:
+            print 'None\n'
+        
+    print 'Board with unique solution'
+    doboard(
+"""
+...2.
+.....
+....3
+.....
+.4...
+""")
 
-    Solver(b).solve()
+    print 'Board with no solutions'
+    doboard(
+"""
+....
+3.1.
+...4
+....
+""")
+    print 'Board with six solutions'
+    doboard('3...\n....\n...3')
+
+
