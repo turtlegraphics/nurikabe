@@ -1,3 +1,7 @@
+# For this project
+# Place to keep profiling information
+profiles
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
