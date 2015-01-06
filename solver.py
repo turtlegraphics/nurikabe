@@ -40,41 +40,93 @@ class Solver:
         
         return True
 
-    def _try_node(self,node,Type):
-        """Set node to Type, then recursively solve."""
-        
-        logging.debug('Try node '+str(node)+' as '+Type.__name__)
+    def _test_and_set_node(self,node,Type):
+        """Set node to Type if legal. Return True if set."""
+        assert(self.board.is_Empty(node))
+
         self.board.set_node(node,Type())
-        logging.debug('\n'+str(self.board))
+
         if self.node_ok(node):
-            self._solve(self.bfs_next[node])
+            logging.debug('Node '+str(node)+' set to '+Type.__name__)
+            return True
         else:
+            self.board.clear_node(node)
             logging.debug('Node '+str(node)+' cannot be '+Type.__name__)
-        self.board.clear_node(node)
+            return False
 
-    def _solve(self,n):
-        """Operate on a node, using _solve recursively."""
-        if n == None:
-            logging.info('Found solution:\n'+str(self.board))
-            self.solutions.append(str(self.board))
-            return
+    def _scan_islands(self):
+        """
+        Look for forced nodes next to islands:
+        * If island is full, all free adjacent nodes
+        * If island has only one free adjacent node, and it's hungry
+        * If two islands share a free adjacent node
+        """
+        found = []
+        fans = []
+        for anchor in self.board.anchors:
+            (size, freedoms, a) = self.board.explore_island(anchor)
+            if size == self.board.get_node(anchor).size:
+                found.extend(freedoms)
+            elif len(freedoms) == 1:
+                found.extend(freedoms)
+            else:
+                found.extend(set(freedoms).intersection(fans))
+            fans.extend(freedoms)
 
-        logging.debug('Working node '+str(n))
+        if found:
+            logging.debug('Found nodes to work on:'+str(found))
+        return found
 
-        if not self.board.is_Empty(n):
-            # node is already set. move along.
-            logging.debug('Node '+str(n)+' is already set.')
-            self._solve(self.bfs_next[n])
-            return
+    def _find_good_node_to_work_on(self):
+        while self.goodnodes:
+            node = self.goodnodes.pop()
+            if self.board.is_Empty(node):
+                return node
 
-        self._try_node(n,Water)
-        self._try_node(n,Land)
+        self.goodnodes = self._scan_islands()
+
+        while self.goodnodes:
+            node = self.goodnodes.pop()
+            if self.board.is_Empty(node):
+                return node
+
+        # Find an empty node in BFS order
+        node = self.basenode
+        while node and not self.board.is_Empty(node):
+            node = self.bfs_next[node]
+        return node
+
+    def _solve(self):
+        """
+        Brute force recursive solver.
+        """
+        solutions = []
+        logging.debug('\n'+str(self.board))
+
+        node = self._find_good_node_to_work_on()
+
+        # All nodes full? Solved
+        if node == None:
+            logging.info('Solution!')
+            return [str(self.board)]
+
+        logging.debug('Working node '+str(node))
+
+        # Recurse on empty node
+        for Type in [Water, Land]:
+            if self._test_and_set_node(node,Type):
+                solutions.extend(self._solve())
+                self.board.clear_node(node)
+
+        return solutions
 
     def solve(self):
-        """Brute force recursive solver."""
-        self.solutions = []
-        self._solve(self.basenode)
-        return self.solutions
+        """
+        Find all solutions to the board in its current state,
+        return them as list.
+        """
+        self.goodnodes = []
+        return self._solve()
 
 if __name__=='__main__':
     import board
