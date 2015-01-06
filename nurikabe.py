@@ -2,8 +2,14 @@
 """
 Nurikabe solver.
 2015 Bryan Clair
-Pass text-based board on stdin. Example:
 
+Pass board in text file as single argument,
+or with no arguements on on stdin.
+
+Example:
+
+python nurikabe.py example.txt
+or
 python nurikabe.py < example.txt
 
 where example.txt might contain
