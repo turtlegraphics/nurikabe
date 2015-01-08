@@ -48,7 +48,7 @@ def parse_board(data,coding={'.':Empty,'+':Land,'#':Water}):
                 elif c.islower():
                     val = c
                 if val == 0:
-                    raise ValueError('Bad character: '+c)
+                    raise ValueError("Bad character: '"+c+"'")
                 b.set_anchor((x,y),val)
             x += 1
         x = 0
