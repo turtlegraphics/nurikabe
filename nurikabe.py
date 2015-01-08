@@ -83,6 +83,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(epilog=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('infile', nargs='?', type=argparse.FileType('r'),default=sys.stdin)
+    parser.add_argument('-m', '--maxvars', type=int, default=9,
+                        help="Max value to try with variable islands.")
     parser.add_argument('-d', '--debug', dest='debug', action='store_true',
                     help="Turn on debug output.")
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
@@ -103,7 +105,7 @@ if __name__ == '__main__':
     print
 
     start = time.time()
-    solutions = solve(layout)
+    solutions = solve(layout,vals='123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'[:args.maxvars])
     end = time.time()
 
     plural = 'solution'
