@@ -33,6 +33,9 @@ class Anchor(Land):
         assert size > 0
         self.size = size
     def __str__(self):
+        if isinstance(self.size,str) and self.size.islower():
+            # it's an uninstantiated variable island size. Print it as a letter
+            return self.size
         if self.size < 10:
             return str(self.size)
         else:

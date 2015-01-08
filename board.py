@@ -169,38 +169,6 @@ class BoardRectangle(Board):
 
         return out.rstrip('\n')
 
-def BoardFromASCII(data,coding={'.':Empty,'+':Land,'#':Water}):
-    """Create a rectangular square-grid board from an ASCII representation.
-    Can give the coding as a dictionary keyed on char with values the type
-    of node (Empty, Land, Water), but anchors must be ASCII 1-9."""
-    rows = data.split()
-    cols = len(rows[0])
-    for r in rows:
-        if len(r) != cols:
-            raise ValueError('All rows must be the same width.')
-
-    board = BoardRectangle(cols,len(rows))
-
-    (x,y) = (0,0)
-    for r in rows:
-        for c in r:
-            if c in coding:
-                board.set_node((x,y),coding[c]())
-            else:
-                val = 0
-                if c.isdigit():
-                    val = ord(c) - ord('0')
-                if c.isalpha():
-                    val = ord(c.upper()) - ord('A') + 10
-                if val == 0:
-                    raise ValueError('Bad character: '+c)
-                board.set_anchor((x,y),val)
-            x += 1
-        x = 0
-        y += 1
-
-    return board
-
 if __name__=='__main__':
     b = BoardRectangle(5,3)
     b.set_anchor((0,0),3)
@@ -257,13 +225,3 @@ if __name__=='__main__':
     print '   Base  : size, free, anchors, Legal?'
     for n in [(0,0),(2,2),(2,1)]:
         print ' ',n,':',b.explore_island(n),'\t',b.legal_island(n)
-
-    print
-    print 'BoardFromASCII'
-    b = BoardFromASCII(
-"""
-.1...1...1.
-...1...1...
-"""
-)
-    print b

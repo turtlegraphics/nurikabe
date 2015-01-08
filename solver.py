@@ -5,8 +5,7 @@ solver module
 2015 Bryan Clair
 """
 
-import sys,logging
-logging.basicConfig(stream=sys.stderr, level=logging.WARNING)
+import logging
 
 import graphutil
 from squares import *
@@ -107,7 +106,6 @@ class Solver:
 
         # All nodes full? Solved
         if node == None:
-            logging.info('Solution!')
             return [str(self.board)]
 
         logging.debug('Working node '+str(node))
