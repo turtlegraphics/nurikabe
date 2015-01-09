@@ -41,11 +41,18 @@ class Solver:
 
     def _scan_islands(self):
         """
-        Look for forced nodes next to islands:
+        Look for nodes next to islands:
+        Return a list of all forced nodes.
+
+        Forced nodes:
         * If island is full, all free adjacent nodes
         * If island has only one free adjacent node, and it's hungry
         * If two islands share a free adjacent node
         """
+        # interesting note: I tried to make this smarter. When there are
+        # no forced nodes, why not try to use some node that's next to an
+        # island? That seems reasonable, but is much much slower than just
+        # fallback to breadth-first search
         found = []
         fans = []
         for anchor in self.board.anchors:
