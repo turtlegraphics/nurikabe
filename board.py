@@ -38,10 +38,20 @@ class Board:
         self.cwtries = 0
         self.cwfails = 0
 
+        # A move stack so moves can be pushed and popped
+        # All variable state should be saved on the stack.
+        # At the moment, this is only the water_connected status.
+        self.movestack = []
+
     def __str__(self):
         return str(self.graph)
 
+    def _set_node(self,node,val):
+        """Set the node to val without considering other state."""
+        self.graph.node[node]['val'] = val
+        
     def set_node(self,node,val):
+        """Set node to val, carefully tracking board state."""
         # Complicated logic here to determine water_connected status
         if self.water_connected is True:
             if isinstance(val,Land):
@@ -62,7 +72,7 @@ class Board:
             if self.water_connected != self._water_connectedness_search():
                 logging.warn('FAIL: setting '+str(node)+' from '+str(self.get_node(node))+'to'+str(val)+'wc='+str(self.water_connected))
 
-        self.graph.node[node]['val'] = val
+        self._set_node(node,val)
         
 
     def set_anchor(self,node,size):
@@ -95,6 +105,16 @@ class Board:
             return me.size
         else:
             return 0
+
+    def push_move(self,node,val):
+        """Make a move, saving board status on a stack for later pop."""
+        self.movestack.append((node,self.get_node(node),self.water_connected))
+        self.set_node(node,val)
+
+    def pop_move(self):
+        """Undo an earlier pushed move."""
+        (node,oldval,self.water_connected) = self.movestack.pop()
+        self._set_node(node,oldval)
 
     def in_pool(self,node):
         """Determine if the node is in a pool."""

@@ -39,20 +39,6 @@ class Solver:
         
         return True
 
-    def _test_and_set_node(self,node,Type):
-        """Set node to Type if legal. Return True if set."""
-        assert(self.board.is_Empty(node))
-
-        self.board.set_node(node,Type())
-
-        if self.node_ok(node):
-            logging.debug('Node '+str(node)+' set to '+Type.__name__)
-            return True
-        else:
-            self.board.clear_node(node)
-            logging.debug('Node '+str(node)+' cannot be '+Type.__name__)
-            return False
-
     def _scan_islands(self):
         """
         Look for forced nodes next to islands:
@@ -112,9 +98,16 @@ class Solver:
 
         # Recurse on empty node
         for Type in [Water, Land]:
-            if self._test_and_set_node(node,Type):
+            assert(self.board.is_Empty(node))
+            self.board.push_move(node,Type())
+
+            if self.node_ok(node):
+                logging.debug('Node '+str(node)+' set to '+Type.__name__)
                 solutions.extend(self._solve())
-                self.board.clear_node(node)
+            else:
+                logging.debug('Node '+str(node)+' cannot be '+Type.__name__)
+
+            self.board.pop_move()
 
         return solutions
 
