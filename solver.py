@@ -117,11 +117,7 @@ class Solver:
         return them as list.
         """
         self.goodnodes = []
-        s = self._solve()
-        print 'cwtries:',self.board.cwtries
-        print 'cwfails:',self.board.cwfails
-        print 'cwrate :',self.board.cwfails / float(self.board.cwtries)
-        return s
+        return self._solve()
 
 if __name__=='__main__':
     logging.basicConfig(level=logging.DEBUG)

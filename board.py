@@ -35,9 +35,6 @@ class Board:
         # None: State unknown
         self.water_connected = None
 
-        self.cwtries = 0
-        self.cwfails = 0
-
         # A move stack so moves can be pushed and popped
         # All variable state should be saved on the stack.
         # At the moment, this is only the water_connected status.
@@ -68,12 +65,7 @@ class Board:
                 if self._water_neighbors(node) == 0:
                     self.water_connected = None
 
-        if self.water_connected is not None:
-            if self.water_connected != self._water_connectedness_search():
-                logging.warn('FAIL: setting '+str(node)+' from '+str(self.get_node(node))+'to'+str(val)+'wc='+str(self.water_connected))
-
         self._set_node(node,val)
-        
 
     def set_anchor(self,node,size):
         """Create an anchor of given size at node n."""
@@ -221,17 +213,8 @@ class Board:
                     water_component = component
         return True
 
-    def slow_but_surely_connected_water(self):
-        slowway = self._water_connectedness_search()
-        if self.water_connected is None:
-            self.water_connected = slowway
-        assert self.water_connected == slowway
-        return self.water_connected
-
     def connected_water(self):
-        self.cwtries += 1
         if self.water_connected is None:
-            self.cwfails += 1
             self.water_connected = self._water_connectedness_search()
         return self.water_connected
 
