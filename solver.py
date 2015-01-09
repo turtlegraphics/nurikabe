@@ -124,9 +124,14 @@ class Solver:
         return them as list.
         """
         self.goodnodes = []
-        return self._solve()
+        s = self._solve()
+        print 'cwtries:',self.board.cwtries
+        print 'cwfails:',self.board.cwfails
+        print 'cwrate :',self.board.cwfails / float(self.board.cwtries)
+        return s
 
 if __name__=='__main__':
+    logging.basicConfig(level=logging.DEBUG)
     import board
 
     def doboard(s):

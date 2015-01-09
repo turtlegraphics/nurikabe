@@ -8,6 +8,7 @@ board module
 
 import networkx as nx
 import graphutil
+import logging
 from squares import *
 
 class Board:
@@ -15,22 +16,54 @@ class Board:
     def __init__(self,g):
         """Initialize with any graph."""
         self.graph = g
-        for n in self.graph:
-            self.set_node(n,Empty())
 
+        # Fill with emptiness.
+        for n in self.graph:
+            self.graph.node[n]['val'] = Empty()
+
+        # track anchors and largest anchor (to limit un-anchored islands)
         self.anchors = []
-        # keep track of largest anchor to limit un-anchored islands
         self.anchor_maxsize = 0
 
         # pools are defined as water cycles of minimum length
         # find all the pools in the graph, indexed by nodes
         (self.pool_size,self.pools) = graphutil.find_shortest_cycles(g)
 
+        # keep track as well as possible whether water could be connected.
+        # True: possible to connect water using more water
+        # False: impossible to connect water
+        # None: State unknown
+        self.water_connected = None
+
+        self.cwtries = 0
+        self.cwfails = 0
+
     def __str__(self):
         return str(self.graph)
 
     def set_node(self,node,val):
+        # Complicated logic here to determine water_connected status
+        if self.water_connected is True:
+            if isinstance(val,Land):
+                if self._nonLand_neighbors(node) > 1:
+                    self.water_connected = None
+            elif isinstance(val,Water):
+                if self._water_neighbors(node) == 0:
+                    self.water_connected = None
+        elif self.water_connected is False:
+            if self.is_Land(node):
+                if self._nonLand_neighbors(node) > 1:
+                    self.water_connected = None
+            elif self.is_Water(node):
+                if self._water_neighbors(node) == 0:
+                    self.water_connected = None
+
+        if self.water_connected is not None:
+            if self.water_connected != self._water_connectedness_search():
+                logging.warn('FAIL: setting '+str(node)+' from '+str(self.get_node(node))+'to'+str(val)+'wc='+str(self.water_connected))
+
         self.graph.node[node]['val'] = val
+        
 
     def set_anchor(self,node,size):
         """Create an anchor of given size at node n."""
@@ -139,7 +172,23 @@ class Board:
                 return True
         return False
 
-    def connected_water(self):
+    def _water_neighbors(self,node):
+        """Return count of Water nodes neighboring given node."""
+        count = 0
+        for n in self.graph[node]:
+            if self.is_Water(n):
+                count += 1
+        return count
+
+    def _nonLand_neighbors(self,node):
+        """Return count of non-Land nodes neighboring given node."""
+        count = 0
+        for n in self.graph[node]:
+            if not self.is_Land(n):
+                count += 1
+        return count
+
+    def _water_connectedness_search(self):
         """True if Water+Empty nodes form a connected subgraph."""
         wetset = [n for n in self.graph if not self.is_Land(n)]
         wetgraph = self.graph.subgraph(wetset)
@@ -151,6 +200,20 @@ class Board:
                 else:
                     water_component = component
         return True
+
+    def slow_but_surely_connected_water(self):
+        slowway = self._water_connectedness_search()
+        if self.water_connected is None:
+            self.water_connected = slowway
+        assert self.water_connected == slowway
+        return self.water_connected
+
+    def connected_water(self):
+        self.cwtries += 1
+        if self.water_connected is None:
+            self.cwfails += 1
+            self.water_connected = self._water_connectedness_search()
+        return self.water_connected
 
 class BoardRectangle(Board):
     """A rectangular square-grid Nurikabe board."""
@@ -170,6 +233,8 @@ class BoardRectangle(Board):
         return out.rstrip('\n')
 
 if __name__=='__main__':
+    logging.basicConfig(level=logging.DEBUG)
+
     b = BoardRectangle(5,3)
     b.set_anchor((0,0),3)
     b.set_anchor((3,2),3)
